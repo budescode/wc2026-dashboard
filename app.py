@@ -685,14 +685,38 @@ app.layout = html.Div(
         ),
         dbc.Container(
             [
-                dbc.Nav(
+                html.Div(
                     [
-                        dbc.NavLink("⚽  Groups",      href="/groups",  active="exact"),
-                        dbc.NavLink("👟  Golden Boot", href="/scorers", active="exact"),
-                        dbc.NavLink("📅  Matches",     href="/matches", active="exact"),
-                        dbc.NavLink("🏆  Bracket",     href="/bracket", active="exact"),
+                        dbc.Nav(
+                            [
+                                dbc.NavLink("⚽  Groups",      href="/groups",  active="exact"),
+                                dbc.NavLink("👟  Golden Boot", href="/scorers", active="exact"),
+                                dbc.NavLink("📅  Matches",     href="/matches", active="exact"),
+                                dbc.NavLink("🏆  Bracket",     href="/bracket", active="exact"),
+                            ],
+                            className="main-tabs",
+                        ),
+                        html.Div(
+                            [
+                                html.A(
+                                    html.Img(src="/assets/github.svg", style={"height": "18px", "width": "18px"}),
+                                    href="https://github.com/budescode/wc2026-dashboard",
+                                    target="_blank",
+                                    className="social-link",
+                                    title="GitHub",
+                                ),
+                                html.A(
+                                    html.Img(src="/assets/linkedin.svg", style={"height": "18px", "width": "18px"}),
+                                    href="https://www.linkedin.com/in/budescode",
+                                    target="_blank",
+                                    className="social-link",
+                                    title="LinkedIn",
+                                ),
+                            ],
+                            className="social-links",
+                        ),
                     ],
-                    className="main-tabs",
+                    className="tabs-bar",
                 ),
                 html.Div(id="tab-content", className="py-4"),
             ],
@@ -705,6 +729,57 @@ app.layout = html.Div(
             size="lg",
             centered=True,
             className="match-detail-modal",
+        ),
+        html.Footer(
+            dbc.Container(
+                [
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.Span("🏆", className="footer-trophy"),
+                                    html.Span("FIFA World Cup 2026", className="footer-brand"),
+                                ],
+                                className="footer-left",
+                            ),
+                            html.Div(
+                                [
+                                    html.Span("Built by ", className="footer-by"),
+                                    html.A("budescode", href="https://www.linkedin.com/in/budescode", target="_blank", className="footer-author"),
+                                    html.Span(" · ", className="footer-sep"),
+                                    html.Span("Powered by ", className="footer-by"),
+                                    html.A("football-data.org", href="https://www.football-data.org", target="_blank", className="footer-link"),
+                                    html.Span(" · ", className="footer-sep"),
+                                    html.A("Dash Plotly", href="https://dash.plotly.com", target="_blank", className="footer-link"),
+                                ],
+                                className="footer-center",
+                            ),
+                            html.Div(
+                                [
+                                    html.A(
+                                        html.Img(src="/assets/github.svg", style={"height": "16px", "width": "16px"}),
+                                        href="https://github.com/budescode/wc2026-dashboard",
+                                        target="_blank",
+                                        className="footer-icon-link",
+                                        title="GitHub",
+                                    ),
+                                    html.A(
+                                        html.Img(src="/assets/linkedin.svg", style={"height": "16px", "width": "16px"}),
+                                        href="https://www.linkedin.com/in/budescode",
+                                        target="_blank",
+                                        className="footer-icon-link",
+                                        title="LinkedIn",
+                                    ),
+                                ],
+                                className="footer-right",
+                            ),
+                        ],
+                        className="footer-inner",
+                    ),
+                ],
+                fluid=True,
+            ),
+            className="wc-footer",
         ),
     ]
 )
