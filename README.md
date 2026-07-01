@@ -8,12 +8,14 @@ A real-time World Cup 2026 dashboard built with Dash Plotly and Dash Bootstrap C
 - **Group standings** — all 12 groups with form, goal difference, and advancement indicators
 - **Golden Boot race** — top scorers leaderboard with goal bars and assist counts
 - **Match browser** — all 104 fixtures grouped by date with clickable detail modals
+- **Match detail modal** — click any match card for full-time score, half-time score, head-to-head record, and referee info; live matches auto-refresh every 20 seconds
 - **Knockout bracket** — displays once the group stage concludes
 - **Teams** — full squad rosters organised by position with group standings
 - **Fixtures** — complete schedule with kickoff times
 - **Played matches** — results, stats, and W/D/L breakdown
 - **Goals & Charts** — scoring charts by player and by group
 - **Light / Dark theme** — toggle with preference saved across sessions
+- **Social links** — GitHub and LinkedIn in the navbar and footer
 
 ## Tech Stack
 
@@ -61,7 +63,9 @@ A real-time World Cup 2026 dashboard built with Dash Plotly and Dash Bootstrap C
 │   ├── goals.py        # Scoring charts & leaderboard
 │   └── live.py         # Live match view
 ├── assets/
-│   └── custom.css      # CSS variables, light/dark theme, all custom styles
+│   ├── custom.css      # CSS variables, light/dark theme, all custom styles
+│   ├── github.svg      # GitHub icon
+│   └── linkedin.svg    # LinkedIn icon
 ├── requirements.txt
 └── .env                # API key (not committed)
 ```

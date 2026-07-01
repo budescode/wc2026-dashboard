@@ -3,6 +3,7 @@ from collections import defaultdict
 
 import dash
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 from dash import ALL, ctx, dcc, html, callback, Input, Output, State, no_update
 
 import api
@@ -11,6 +12,7 @@ import pages.fixtures as pg_fixtures
 import pages.played as pg_played
 import pages.goals as pg_goals
 import pages.live as pg_live
+import pages.elo as pg_elo
 
 # ── App Setup ──────────────────────────────────────────────────────────────────
 
@@ -334,6 +336,11 @@ def render_scorers() -> html.Div:
                                         className="goals-count",
                                     ),
                                     html.Span(f"{assists} ast", className="assists-count"),
+                                    html.Span(
+                                        f"{goals + assists} GI",
+                                        title="Goal involvements (goals + assists)",
+                                        className="gi-count",
+                                    ),
                                     html.Span(f"{pens} pen", className="text-secondary small") if pens else None,
                                     html.Span(f"{played} games", className="games-count"),
                                 ],
@@ -517,21 +524,117 @@ def render_bracket() -> html.Div:
     for m in ko:
         by_stage[m.get("stage")].append(m)
 
-    sections = []
+    accordion_items = []
+    open_stages     = []
+
     for stage in STAGE_ORDER:
         if stage not in by_stage:
             continue
-        sections.append(
-            html.Div(
-                [
-                    html.Div(STAGE_LABELS[stage], className="ko-stage-label"),
-                    html.Div([match_card(m) for m in by_stage[stage]], className="matches-grid"),
-                ],
-                className="ko-stage-section",
+
+        stage_matches  = by_stage[stage]
+        all_finished   = all(m.get("status") == "FINISHED" for m in stage_matches)
+        done_count     = sum(1 for m in stage_matches if m.get("status") == "FINISHED")
+        total_count    = len(stage_matches)
+
+        if not all_finished:
+            open_stages.append(stage)
+
+        status_badge_el = (
+            dbc.Badge("Completed", color="secondary", className="ms-2")
+            if all_finished else
+            dbc.Badge(f"{done_count}/{total_count} played", color="warning", text_color="dark", className="ms-2")
+        )
+
+        title = html.Div(
+            [
+                html.Span(STAGE_LABELS[stage], className="ko-stage-label mb-0 me-2",
+                          style={"borderBottom": "none", "padding": "0", "margin": "0"}),
+                status_badge_el,
+            ],
+            className="d-flex align-items-center",
+        )
+
+        accordion_items.append(
+            dbc.AccordionItem(
+                html.Div([match_card(m) for m in stage_matches], className="matches-grid p-3"),
+                title=title,
+                item_id=stage,
             )
         )
 
-    return html.Div(sections)
+    return dbc.Accordion(
+        accordion_items,
+        active_item=open_stages,
+        always_open=True,
+        className="bracket-accordion",
+    )
+
+
+# ── H2H Chart ─────────────────────────────────────────────────────────────────
+
+def _h2h_chart(h2h: dict, home_id: int,
+               home_name: str, away_name: str) -> dcc.Graph | html.Span:
+    matches = [m for m in h2h.get("matches", []) if m.get("status") == "FINISHED"][-10:]
+    if len(matches) < 2:
+        return html.Span()
+
+    dates, home_goals, away_goals = [], [], []
+
+    for m in matches:
+        ft  = m.get("score", {}).get("fullTime", {})
+        hg  = ft.get("home")
+        ag  = ft.get("away")
+        if hg is None or ag is None:
+            continue
+
+        m_home_id = m.get("homeTeam", {}).get("id")
+        if m_home_id == home_id:
+            h, a = hg, ag
+        else:
+            h, a = ag, hg
+
+        try:
+            date_str = m.get("utcDate", "")[:10]
+            date_label = datetime.fromisoformat(date_str).strftime("%b %Y")
+        except Exception:
+            date_label = date_str
+
+        dates.append(date_label)
+        home_goals.append(h)
+        away_goals.append(a)
+
+    if not dates:
+        return html.Span()
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name=home_name,
+        x=dates, y=home_goals,
+        marker_color="rgba(240,192,48,0.8)",
+        hovertemplate="%{x}<br>" + home_name + ": %{y} goals<extra></extra>",
+    ))
+    fig.add_trace(go.Bar(
+        name=away_name,
+        x=dates, y=away_goals,
+        marker_color="rgba(59,130,246,0.8)",
+        hovertemplate="%{x}<br>" + away_name + ": %{y} goals<extra></extra>",
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter, sans-serif", color="#64748b", size=11),
+        margin=dict(l=0, r=0, t=8, b=0),
+        height=160,
+        barmode="group",
+        bargap=0.25,
+        showlegend=True,
+        legend=dict(orientation="h", x=0, y=1.15, font=dict(size=10)),
+        xaxis=dict(showgrid=False, tickfont=dict(size=10)),
+        yaxis=dict(showgrid=True, gridcolor="rgba(100,116,139,0.12)",
+                   zeroline=False, tickfont=dict(size=10), dtick=1),
+    )
+    return dcc.Graph(figure=fig, config={"displayModeBar": False},
+                     style={"width": "100%"})
 
 
 # ── Match Detail Modal ─────────────────────────────────────────────────────────
@@ -613,7 +716,13 @@ def build_modal_content(detail: dict, h2h: dict) -> list:
                 html.Div(className="h2h-seg h2h-draw", style={"flex": str(dr / denom)}),
                 html.Div(className="h2h-seg h2h-away", style={"flex": str(aw / denom)}),
             ], className="h2h-bar"),
-            html.Div(f"{n_played} meetings  ·  {total_goals} total goals", className="h2h-meta"),
+            html.Div(f"{n_played} meetings  ·  {total_goals} total goals", className="h2h-meta mb-2"),
+            _h2h_chart(
+                h2h,
+                home.get("id", 0),
+                home.get("shortName") or home.get("name", "Home"),
+                away.get("shortName") or away.get("name", "Away"),
+            ),
         ], className="modal-h2h")
 
     # Referee
@@ -689,10 +798,11 @@ app.layout = html.Div(
                     [
                         dbc.Nav(
                             [
-                                dbc.NavLink("⚽  Groups",      href="/groups",  active="exact"),
-                                dbc.NavLink("👟  Golden Boot", href="/scorers", active="exact"),
-                                dbc.NavLink("📅  Matches",     href="/matches", active="exact"),
-                                dbc.NavLink("🏆  Bracket",     href="/bracket", active="exact"),
+                                dbc.NavLink("⚽  Groups",      href="/groups",      active="exact"),
+                                dbc.NavLink("👟  Golden Boot", href="/scorers",     active="exact"),
+                                dbc.NavLink("📅  Matches",     href="/matches",     active="exact"),
+                                dbc.NavLink("🏆  Bracket",     href="/bracket",     active="exact"),
+                                dbc.NavLink("🔮  Predictions", href="/predictions", active="exact"),
                             ],
                             className="main-tabs",
                         ),
@@ -718,7 +828,12 @@ app.layout = html.Div(
                     ],
                     className="tabs-bar",
                 ),
-                html.Div(id="tab-content", className="py-4"),
+                dcc.Loading(
+                    html.Div(id="tab-content", className="py-4"),
+                    type="circle",
+                    color="#f0c030",
+                    style={"minHeight": "200px"},
+                ),
             ],
             fluid=True,
             className="main-content",
@@ -857,6 +972,8 @@ def render_tab(pathname, _, __):
         return pg_goals.layout()
     if route == "live":
         return pg_live.layout()
+    if route == "predictions":
+        return pg_elo.layout()
     return render_groups()
 
 
@@ -895,4 +1012,4 @@ def update_modal(match_id, _, is_open):
 # ── Run ────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8052)
+    app.run(debug=False, port=8052)

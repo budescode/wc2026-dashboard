@@ -175,6 +175,7 @@ def layout() -> html.Div:
                                     html.Span(s.get("team", {}).get("name", ""), className="scorer-team-name me-3"),
                                     dbc.Badge(f"{s.get('goals',0)} G", color="warning", text_color="dark", className="me-1"),
                                     dbc.Badge(f"{s.get('assists',0) or 0} A", color="primary", className="me-1"),
+                                    dbc.Badge(f"{(s.get('goals',0) or 0) + (s.get('assists',0) or 0)} GI", color="success", className="me-1"),
                                 ],
                                 className="leaderboard-row" + (" lb-leader" if i == 0 else ""),
                             )
