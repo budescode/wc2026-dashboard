@@ -221,6 +221,33 @@ body {
 
 @keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
+/* ── Nav Team Search ─────────────────────────────────────────── */
+.nav-search-wrapper {
+  display: flex; align-items: center;
+  padding: 6px 8px;
+  border-right: 1px solid var(--border);
+}
+.nav-team-dropdown {
+  width: 210px;
+}
+.nav-team-dropdown .Select-control {
+  background: var(--pill-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  min-height: 34px !important;
+  height: 34px !important;
+}
+.nav-team-dropdown .Select-placeholder,
+.nav-team-dropdown .Select-value-label { color: var(--text-muted) !important; font-size: 0.8rem !important; line-height: 32px !important; }
+.nav-team-dropdown .Select-arrow-zone { padding-top: 4px !important; }
+.nav-team-dropdown .Select-menu-outer {
+  background: var(--bg-card) !important; border: 1px solid var(--border) !important;
+  border-radius: 8px !important; margin-top: 4px !important; z-index: 999 !important;
+}
+.nav-team-dropdown .Select-option       { background: var(--bg-card) !important; color: var(--text-primary) !important; font-size: 0.82rem !important; }
+.nav-team-dropdown .Select-option:hover,
+.nav-team-dropdown .Select-option.is-focused { background: var(--row-hover) !important; }
+
 /* ── Tabs Bar ────────────────────────────────────────────────── */
 .tabs-bar {
   display: flex;

@@ -807,6 +807,17 @@ app.layout = html.Div(
                             className="main-tabs",
                         ),
                         html.Div(
+                            dcc.Dropdown(
+                                id="nav-team-search",
+                                options=[],
+                                placeholder="🔍 Search team...",
+                                clearable=True,
+                                searchable=True,
+                                className="nav-team-dropdown",
+                            ),
+                            className="nav-search-wrapper",
+                        ),
+                        html.Div(
                             [
                                 html.A(
                                     html.Img(src="/assets/github.svg", style={"height": "18px", "width": "18px"}),
@@ -900,6 +911,36 @@ app.layout = html.Div(
 )
 
 
+# ── Nav Team Search ────────────────────────────────────────────────────────────
+
+@callback(
+    Output("nav-team-search", "options"),
+    Input("refresh", "n_intervals"),
+)
+def populate_nav_search(_):
+    try:
+        data  = api.get_teams()
+        teams = sorted(data.get("teams", []), key=lambda t: t.get("name", ""))
+        return [{"label": t.get("name", "?"), "value": t["id"]} for t in teams]
+    except Exception:
+        return []
+
+
+app.clientside_callback(
+    """
+    function(value) {
+        if (value) {
+            window.location.href = '/teams?team=' + value;
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("nav-team-search", "value"),
+    Input("nav-team-search", "value"),
+    prevent_initial_call=True,
+)
+
+
 # ── Theme Callbacks ────────────────────────────────────────────────────────────
 
 # Apply theme to <html> element and update button icon
@@ -944,10 +985,11 @@ def update_header(_, pathname):
 @callback(
     Output("tab-content", "children"),
     Input("url", "pathname"),
+    Input("url", "search"),
     Input("refresh", "n_intervals"),
     Input("live-interval", "n_intervals"),
 )
-def render_tab(pathname, _, __):
+def render_tab(pathname, search, _, __):
     route = (pathname or "/groups").strip("/") or "groups"
 
     # Only re-render on live-interval when actually on /live
@@ -963,7 +1005,7 @@ def render_tab(pathname, _, __):
     if route == "bracket":
         return render_bracket()
     if route == "teams":
-        return pg_teams.layout()
+        return pg_teams.layout(search or "")
     if route == "fixtures":
         return pg_fixtures.layout()
     if route == "played":

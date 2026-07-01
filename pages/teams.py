@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import parse_qs
 
 import dash_bootstrap_components as dbc
 from dash import Input, Output, callback, dcc, html, no_update
@@ -257,7 +258,15 @@ def show_team_detail(team_id):
 
 # ── Layout ─────────────────────────────────────────────────────────────────────
 
-def layout() -> html.Div:
+def _get_entry(team_id: int, standings: list) -> dict:
+    for s in standings:
+        for row in s.get("table", []):
+            if row.get("team", {}).get("id") == team_id:
+                return {**row, "group": s.get("group", "")}
+    return {}
+
+
+def layout(search: str = "") -> html.Div:
     try:
         standings_data = api.get_standings()
         teams_data     = api.get_teams()
@@ -267,6 +276,22 @@ def layout() -> html.Div:
     standings  = [s for s in standings_data.get("standings", []) if s.get("type") == "TOTAL"]
     standings.sort(key=lambda s: s.get("group", ""))
     team_lookup = {t["id"]: t for t in teams_data.get("teams", [])}
+
+    # Parse ?team=<id> query param
+    preselect_id = None
+    try:
+        params = parse_qs(search.lstrip("?"))
+        preselect_id = int(params.get("team", [None])[0])
+    except (TypeError, ValueError, IndexError):
+        pass
+
+    # Pre-render detail card if arriving via URL
+    initial_detail = html.Span()
+    if preselect_id and preselect_id in team_lookup:
+        initial_detail = _team_detail_card(
+            team_lookup[preselect_id],
+            _get_entry(preselect_id, standings),
+        )
 
     # Build dropdown options sorted alphabetically — text only to keep rendering fast
     all_teams = sorted(teams_data.get("teams", []), key=lambda t: t.get("name", ""))
@@ -356,13 +381,14 @@ def layout() -> html.Div:
                     dcc.Dropdown(
                         id="team-search-dropdown",
                         options=dropdown_options,
+                        value=preselect_id,
                         placeholder="🔍  Search for a team...",
                         clearable=True,
                         searchable=True,
                         className="team-dropdown",
                     ),
                     dcc.Loading(
-                        html.Div(id="team-detail-panel", className="mt-3"),
+                        html.Div(initial_detail, id="team-detail-panel", className="mt-3"),
                         type="circle",
                         color="#f0c030",
                     ),
