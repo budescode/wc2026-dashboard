@@ -680,8 +680,75 @@ body {
 .pos-tag           { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:700; letter-spacing:1.5px; margin-bottom:6px; }
 .player-chips-row  { display:flex; flex-wrap:wrap; gap:6px; }
 .player-chip       { display:flex; align-items:center; gap:5px; background:var(--chip-bg); border:1px solid var(--chip-border); border-radius:6px; padding:4px 9px; }
+.player-chip-highlight {
+  background: rgba(var(--gold-rgb), 0.15) !important;
+  border-color: rgba(var(--gold-rgb), 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2);
+}
+.player-chip-highlight .player-name { color: var(--gold) !important; font-weight: 700; }
 .player-name       { font-size:0.78rem; color:var(--text-primary); }
 .player-age        { font-size:0.68rem; color:var(--text-muted); }
+
+.player-highlight-banner {
+  display: flex; align-items: center;
+  background: rgba(var(--gold-rgb), 0.08);
+  border: 1px solid rgba(var(--gold-rgb), 0.25);
+  border-radius: 8px; padding: 8px 14px;
+  margin-bottom: 12px; font-size: 0.85rem;
+}
+
+/* ── Player stats card (shown when searching a player) ───────── */
+.player-stats-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--gold-rgb), 0.30);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 4px;
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.06), var(--shadow);
+}
+.player-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.player-card-number {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 48px;
+  text-align: center;
+}
+.player-card-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.player-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.player-card-nationality {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.player-stat-num {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.player-stat-lbl {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
 
 /* ── Fixtures / Played rows ──────────────────────────────────── */
 .fixtures-list   { display:flex; flex-direction:column; gap:0; }
@@ -874,6 +941,99 @@ body {
   .footer-inner { justify-content: center; text-align: center; }
   .footer-center { justify-content: center; }
 }
+
+/* ── About page ──────────────────────────────────────────────── */
+.about-what-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: var(--shadow);
+}
+.about-section-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.about-body-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin-bottom: 10px;
+}
+.about-inline-link {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+}
+.about-inline-link:hover { text-decoration: underline; }
+
+.about-page-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  height: 100%;
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+.about-page-card:hover {
+  border-color: rgba(var(--gold-rgb), 0.4);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+.about-page-card-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.about-page-icon  { font-size: 1.4rem; }
+.about-page-badge { font-size: 0.62rem !important; }
+.about-page-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.about-page-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  flex: 1;
+  margin-bottom: 12px;
+}
+.about-page-link-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gold);
+  margin-top: auto;
+}
+.about-arrow { transition: transform 0.15s; }
+.about-page-card:hover .about-arrow { transform: translateX(4px); }
+
+.about-tech-list { display: flex; flex-direction: column; gap: 8px; }
+.about-tech-item { font-size: 0.87rem; }
+.about-tech-name {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+}
+.about-tech-name:hover { text-decoration: underline; }
+.about-tech-desc { color: var(--text-secondary); }
+
+.about-source-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.87rem;
+  margin-bottom: 8px;
+}
+.about-source-row:last-child { margin-bottom: 0; }
 
 /* ── Bootstrap overrides – dark mode ─────────────────────────── */
 [data-theme="dark"] .text-success { color: #22c55e !important; }

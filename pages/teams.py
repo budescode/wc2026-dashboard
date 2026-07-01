@@ -76,7 +76,83 @@ def _squad_body(team: dict) -> html.Div:
     )
 
 
-def _team_detail_card(team: dict, entry: dict) -> html.Div:
+def _player_stats_card(player: dict, scorer: dict) -> html.Div:
+    name        = player.get("name", "?")
+    position    = player.get("position", "")
+    nationality = player.get("nationality", "?")
+    shirt       = player.get("shirtNumber")
+    pos_label   = POSITION_LABEL.get(position, position[:3].upper() if position else "MID")
+    pos_color   = POSITION_COLOR.get(position, "#8899aa")
+
+    goals   = scorer.get("goals",   0) or 0
+    assists = scorer.get("assists", 0) or 0
+    gi      = goals + assists
+    pens    = scorer.get("penalties", 0) or 0
+    played  = scorer.get("playedMatches", 0) or 0
+
+    def stat_bubble(val, label, color="var(--gold)"):
+        return html.Div(
+            [
+                html.Div(str(val), className="player-stat-num", style={"color": color}),
+                html.Div(label, className="player-stat-lbl"),
+            ],
+            className="played-stat-card",
+        )
+
+    shirt_or_pos = f"#{shirt}" if shirt else pos_label
+
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.Div(shirt_or_pos, className="player-card-number", style={"color": pos_color}),
+                    html.Div(
+                        [
+                            html.H4(name, className="player-card-name"),
+                            html.Div(
+                                [
+                                    dbc.Badge(
+                                        pos_label,
+                                        style={
+                                            "backgroundColor": pos_color + "22",
+                                            "color": pos_color,
+                                            "border": f"1px solid {pos_color}55",
+                                        },
+                                        className="me-2",
+                                    ),
+                                    html.Span(nationality, className="player-card-nationality"),
+                                    html.Span(
+                                        f"  ·  Age {_age(player.get('dateOfBirth',''))}",
+                                        style={"color": "var(--text-muted)", "fontSize": "0.82rem"},
+                                    ),
+                                ],
+                                className="player-card-meta mt-1",
+                            ),
+                        ]
+                    ),
+                ],
+                className="player-card-header",
+            ),
+            html.Div(
+                [
+                    stat_bubble(goals,   "Goals",    "#f0c030"),
+                    stat_bubble(assists, "Assists",  "#60a5fa"),
+                    stat_bubble(gi,      "GI",       "#22c55e"),
+                    stat_bubble(pens,    "Pens",     "#f59e0b"),
+                    stat_bubble(played,  "Matches",  "var(--text-secondary)"),
+                ],
+                className="played-stats-row mt-3",
+            ),
+            html.Div(
+                "No goals or assists in this tournament yet",
+                className="elo-method-note mt-2 mb-0",
+            ) if not goals and not assists else html.Span(),
+        ],
+        className="player-stats-card",
+    )
+
+
+def _team_detail_card(team: dict, entry: dict, highlight_player_id: int = None, scorers: list = None) -> html.Div:
     crest  = team.get("crest", "")
     name   = team.get("name", "?")
     tla    = team.get("tla", "")
@@ -127,7 +203,7 @@ def _team_detail_card(team: dict, entry: dict) -> html.Div:
                     html.Span(p.get("name", "?"), className="player-name"),
                     html.Span(_age(p.get("dateOfBirth", "")), className="player-age"),
                 ],
-                className="player-chip",
+                className="player-chip" + (" player-chip-highlight" if p.get("id") == highlight_player_id else ""),
             )
             for p in players
         ]
@@ -189,6 +265,18 @@ def _team_detail_card(team: dict, entry: dict) -> html.Div:
                 className="played-stats-row mt-3",
             ),
             html.Hr(style={"borderColor": "var(--border)", "margin": "16px 0"}),
+            # Player stats card (only when arriving via player search)
+            *([
+                html.Div("Player Stats", className="modal-section-label mb-2"),
+                _player_stats_card(
+                    next((p for p in team.get("squad", []) if p.get("id") == highlight_player_id), {}),
+                    next(
+                        (s for s in (scorers or []) if s.get("player", {}).get("id") == highlight_player_id),
+                        {},
+                    ),
+                ),
+                html.Hr(style={"borderColor": "var(--border)", "margin": "16px 0"}),
+            ] if highlight_player_id else []),
             # Squad
             html.Div("Squad", className="modal-section-label mb-2"),
             html.Div(position_sections, className="squad-sections"),
@@ -246,12 +334,7 @@ def show_team_detail(team_id):
         return dbc.Alert("Team not found.", color="secondary")
 
     standings = [s for s in standings_data.get("standings", []) if s.get("type") == "TOTAL"]
-    entry = {}
-    for s in standings:
-        for row in s.get("table", []):
-            if row.get("team", {}).get("id") == int(team_id):
-                entry = {**row, "group": s.get("group", "")}
-                break
+    entry = _get_entry(int(team_id), standings)
 
     return _team_detail_card(full_team, entry)
 
@@ -277,13 +360,23 @@ def layout(search: str = "") -> html.Div:
     standings.sort(key=lambda s: s.get("group", ""))
     team_lookup = {t["id"]: t for t in teams_data.get("teams", [])}
 
-    # Parse ?team=<id> query param
-    preselect_id = None
+    # Parse query params
+    preselect_id  = None
+    highlight_pid = None
     try:
-        params = parse_qs(search.lstrip("?"))
-        preselect_id = int(params.get("team", [None])[0])
+        params        = parse_qs(search.lstrip("?"))
+        preselect_id  = int(params.get("team",   [None])[0])
+        highlight_pid = int(params.get("player", [None])[0])
     except (TypeError, ValueError, IndexError):
         pass
+
+    # Fetch scorers only when a player search is active (avoids extra API call on normal page load)
+    scorers_list = []
+    if highlight_pid:
+        try:
+            scorers_list = api.get_scorers(limit=200).get("scorers", [])
+        except Exception:
+            pass
 
     # Pre-render detail card if arriving via URL
     initial_detail = html.Span()
@@ -291,6 +384,8 @@ def layout(search: str = "") -> html.Div:
         initial_detail = _team_detail_card(
             team_lookup[preselect_id],
             _get_entry(preselect_id, standings),
+            highlight_pid,
+            scorers_list,
         )
 
     # Build dropdown options sorted alphabetically — text only to keep rendering fast

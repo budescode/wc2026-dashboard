@@ -13,6 +13,7 @@ import pages.played as pg_played
 import pages.goals as pg_goals
 import pages.live as pg_live
 import pages.elo as pg_elo
+import pages.about as pg_about
 
 # ── App Setup ──────────────────────────────────────────────────────────────────
 
@@ -803,6 +804,7 @@ app.layout = html.Div(
                                 dbc.NavLink("📅  Matches",     href="/matches",     active="exact"),
                                 dbc.NavLink("🏆  Bracket",     href="/bracket",     active="exact"),
                                 dbc.NavLink("🔮  Predictions", href="/predictions", active="exact"),
+                                dbc.NavLink("ℹ️  About",       href="/about",       active="exact"),
                             ],
                             className="main-tabs",
                         ),
@@ -811,6 +813,17 @@ app.layout = html.Div(
                                 id="nav-team-search",
                                 options=[],
                                 placeholder="🔍 Search team...",
+                                clearable=True,
+                                searchable=True,
+                                className="nav-team-dropdown",
+                            ),
+                            className="nav-search-wrapper",
+                        ),
+                        html.Div(
+                            dcc.Dropdown(
+                                id="nav-player-search",
+                                options=[],
+                                placeholder="👤 Search player...",
                                 clearable=True,
                                 searchable=True,
                                 className="nav-team-dropdown",
@@ -941,6 +954,49 @@ app.clientside_callback(
 )
 
 
+@callback(
+    Output("nav-player-search", "options"),
+    Input("refresh", "n_intervals"),
+)
+def populate_player_search(_):
+    try:
+        data  = api.get_teams()
+        teams = data.get("teams", [])
+        opts  = []
+        for team in sorted(teams, key=lambda t: t.get("name", "")):
+            tla   = team.get("tla", "")
+            t_id  = team.get("id")
+            for p in team.get("squad", []):
+                p_id  = p.get("id")
+                name  = p.get("name", "?")
+                pos   = p.get("position", "")
+                pos_short = {"Goalkeeper": "GK", "Defence": "DEF",
+                             "Midfield": "MID", "Offence": "FWD"}.get(pos, pos[:3])
+                opts.append({
+                    "label": f"{name}  ·  {pos_short}  ·  {tla}",
+                    "value": f"{t_id}_{p_id}",
+                })
+        return opts
+    except Exception:
+        return []
+
+
+app.clientside_callback(
+    """
+    function(value) {
+        if (value) {
+            var parts = value.split('_');
+            window.location.href = '/teams?team=' + parts[0] + '&player=' + parts[1];
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("nav-player-search", "value"),
+    Input("nav-player-search", "value"),
+    prevent_initial_call=True,
+)
+
+
 # ── Theme Callbacks ────────────────────────────────────────────────────────────
 
 # Apply theme to <html> element and update button icon
@@ -1016,6 +1072,8 @@ def render_tab(pathname, search, _, __):
         return pg_live.layout()
     if route == "predictions":
         return pg_elo.layout()
+    if route == "about":
+        return pg_about.layout()
     return render_groups()
 
 
